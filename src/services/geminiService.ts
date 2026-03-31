@@ -15,10 +15,6 @@ export interface MarketAdvice {
 }
 
 export async function getMarketAdvice(crop: string, location: string, language: 'English' | 'Sheng'): Promise<string> {
-  if (!apiKey || apiKey === "MY_GEMINI_API_KEY") {
-    throw new Error("API_KEY_MISSING");
-  }
-
   const systemInstruction = `
     You are "Mkulima AI", a expert market negotiator and agricultural advisor for small-scale farmers in Kenya.
     Your goal is to help farmers get the best price for their produce.

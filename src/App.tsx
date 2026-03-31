@@ -89,18 +89,10 @@ export default function App() {
       handleSpeak(advice);
     } catch (error) {
       console.error("Error getting advice:", error);
-      let content = "Samahani, kuna tatizo la kiufundi. Tafadhali hakikisha API key yako imewekwa vizuri kwenye `.env` file. (Sorry, there's a technical issue. Please ensure your API key is correctly set in the `.env` file.)";
-      
-      if (error instanceof Error && error.message === "API_KEY_MISSING") {
-        content = "⚠️ **API Key Missing**: Please check your `.env` file. It must contain `GEMINI_API_KEY=\"your_key\"`. Make sure you restarted your terminal after adding it!";
-      } else if (error instanceof Error && error.message.includes("API_KEY_INVALID")) {
-        content = "❌ **Invalid API Key**: The key in your `.env` file is not valid. Please double-check it in Google AI Studio.";
-      }
-
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'ai',
-        content,
+        content: "Samahani, kuna tatizo la kiufundi. Tafadhali jaribu tena baadaye. (Sorry, there's a technical issue. Please try again later.)",
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMessage]);
