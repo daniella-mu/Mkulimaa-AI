@@ -15,6 +15,10 @@ export interface MarketAdvice {
 }
 
 export async function getMarketAdvice(crop: string, location: string, language: 'English' | 'Sheng'): Promise<string> {
+  if (!apiKey || apiKey === "MY_GEMINI_API_KEY") {
+    throw new Error("API_KEY_MISSING");
+  }
+
   const systemInstruction = `
     You are "Mkulima AI", a expert market negotiator and agricultural advisor for small-scale farmers in Kenya.
     Your goal is to help farmers get the best price for their produce.
@@ -32,16 +36,24 @@ export async function getMarketAdvice(crop: string, location: string, language: 
     Format your response clearly with headings.
   `;
 
-  const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
-    contents: `I have ${crop} in ${location}. What is the fair price and when should I sell?`,
-    config: {
-      systemInstruction,
-      tools: [{ googleSearch: {} }],
-    },
-  });
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: `I have ${crop} in ${location}. What is the fair price and when should I sell?`,
+      config: {
+        systemInstruction,
+        tools: [{ googleSearch: {} }],
+      },
+    });
 
-  return response.text || "Samahani, siwezi kupata habari hiyo kwa sasa. (Sorry, I can't get that info right now.)";
+    return response.text || "Samahani, siwezi kupata habari hiyo kwa sasa. (Sorry, I can't get that info right now.)";
+  } catch (error) {
+    console.error("Gemini API Error:", error);
+    if (error instanceof Error && error.message.includes("API_KEY_INVALID")) {
+      throw new Error("API_KEY_INVALID");
+    }
+    throw error;
+  }
 }
 
 export async function getSpeech(text: string): Promise<string | null> {
