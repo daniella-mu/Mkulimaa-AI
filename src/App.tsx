@@ -89,6 +89,13 @@ export default function App() {
       handleSpeak(advice);
     } catch (error) {
       console.error("Error getting advice:", error);
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'ai',
+        content: "Samahani, kuna tatizo la kiufundi. Tafadhali hakikisha API key yako imewekwa vizuri kwenye `.env` file. (Sorry, there's a technical issue. Please ensure your API key is correctly set in the `.env` file.)",
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }

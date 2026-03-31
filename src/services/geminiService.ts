@@ -1,6 +1,11 @@
 import { GoogleGenAI, Modality } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const apiKey = process.env.GEMINI_API_KEY;
+if (!apiKey || apiKey === "MY_GEMINI_API_KEY") {
+  console.warn("GEMINI_API_KEY is missing or using placeholder value. Please set it in your .env file.");
+}
+
+const ai = new GoogleGenAI({ apiKey: apiKey || "" });
 
 export interface MarketAdvice {
   fairPrice: string;
