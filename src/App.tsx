@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { motion, AnimatePresence } from 'motion/react';
-import { getMarketAdvice, getSpeech } from './services/geminiService';
+import { getMarketAdvice, getSpeech, getApiKeyStatus } from './services/geminiService';
 import { cn } from './lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -89,10 +89,28 @@ export default function App() {
       handleSpeak(advice);
     } catch (error) {
       console.error("Error getting advice:", error);
+      
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const keyStatus = getApiKeyStatus();
+      
+      let debugMessage = "Samahani, kuna tatizo la kiufundi. Tafadhali jaribu tena baadaye. (Sorry, there's a technical issue. Please try again later.)";
+      
+      if (isLocalhost) {
+        debugMessage += `\n\n🔍 **Localhost Debug Info:**\n` +
+          `*   **Error Details:** \`${error instanceof Error ? error.message : String(error)}\`\n` +
+          `*   **API Key Loaded:** \`${keyStatus.hasKey ? 'Yes' : 'No'}\`\n` +
+          `*   **Key Source:** \`${keyStatus.keySource}\`\n` +
+          `*   **Key Prefix:** \`${keyStatus.keyPrefix}\`\n\n` +
+          `💡 **How to fix this:**\n` +
+          `1. Ensure your local \`.env\` file is in the root directory (same folder as \`package.json\`).\n` +
+          `2. Your file must define: \`VITE_GEMINI_API_KEY="your_api_key_here"\` (without the \`VITE_\` prefix, Vite won't send it to the browser).\n` +
+          `3. **CRITICAL:** You must close your terminal/command prompt and run \`npm run dev\` again after changing the \`.env\` file. Vite does not pick up new env files automatically!`;
+      }
+      
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'ai',
-        content: "Samahani, kuna tatizo la kiufundi. Tafadhali jaribu tena baadaye. (Sorry, there's a technical issue. Please try again later.)",
+        content: debugMessage,
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMessage]);

@@ -5,6 +5,14 @@ if (!apiKey || apiKey === "MY_GEMINI_API_KEY") {
   console.warn("GEMINI_API_KEY is missing. Please set VITE_GEMINI_API_KEY in your local .env file.");
 }
 
+export function getApiKeyStatus() {
+  return {
+    hasKey: !!apiKey && apiKey !== "MY_GEMINI_API_KEY",
+    keySource: process.env.GEMINI_API_KEY ? "process.env.GEMINI_API_KEY" : (import.meta.env.VITE_GEMINI_API_KEY ? "import.meta.env.VITE_GEMINI_API_KEY" : "none"),
+    keyPrefix: apiKey && apiKey.length > 6 ? apiKey.slice(0, 6) + "..." : "none"
+  };
+}
+
 const ai = new GoogleGenAI({ apiKey: apiKey || "" });
 
 export interface MarketAdvice {
