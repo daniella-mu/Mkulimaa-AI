@@ -20,7 +20,7 @@ import {
 import ReactMarkdown from 'react-markdown';
 import { motion, AnimatePresence } from 'motion/react';
 import { getMarketAdvice, getSpeech, getApiKeyStatus } from './services/geminiService';
-import { cn } from './lib/utils';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
