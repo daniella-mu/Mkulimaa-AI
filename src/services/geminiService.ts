@@ -34,7 +34,7 @@ export async function getMarketAdvice(crop: string, location: string, language: 
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-3.5-flash",
       contents: `I have ${crop} in ${location}. What is the fair price and when should I sell?`,
       config: {
         systemInstruction,
@@ -45,7 +45,7 @@ export async function getMarketAdvice(crop: string, location: string, language: 
     return response.text || "Samahani, siwezi kupata habari hiyo kwa sasa. (Sorry, I can't get that info right now.)";
   } catch (error) {
     console.error("Gemini API Error:", error);
-    if (error instanceof Error && error.message.includes("API_KEY_INVALID")) {
+    if (error instanceof Error && (error.message.includes("API_KEY_INVALID") || error.message.includes("API key not valid"))) {
       throw new Error("API_KEY_INVALID");
     }
     throw error;
@@ -55,7 +55,7 @@ export async function getMarketAdvice(crop: string, location: string, language: 
 export async function getSpeech(text: string): Promise<string | null> {
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-preview-tts",
+      model: "gemini-3.1-flash-tts-preview",
       contents: [{ parts: [{ text }] }],
       config: {
         responseModalities: [Modality.AUDIO],
