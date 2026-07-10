@@ -50,8 +50,11 @@ export default function App() {
   const [language, setLanguage] = useState<'English' | 'Sheng'>('Sheng');
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
+  const [loadingAudioId, setLoadingAudioId] = useState<string | null>(null);
+  const audioSourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const activeRequestIdRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -61,6 +64,10 @@ export default function App() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    return () => stopSpeaking();
+  }, []);
 
   const handleSend = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -135,17 +142,54 @@ export default function App() {
     recognition.start();
   };
 
-  const handleSpeak = async (text: string) => {
-    if (isSpeaking) {
-      setIsSpeaking(false);
+  const stopSpeaking = () => {
+    activeRequestIdRef.current = null;
+    if (audioSourceRef.current) {
+      try {
+        audioSourceRef.current.stop();
+      } catch {
+        // already finished/stopped
+      }
+      audioSourceRef.current = null;
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+    window.speechSynthesis.cancel();
+    setSpeakingMessageId(null);
+    setLoadingAudioId(null);
+  };
+
+  const handleSpeak = async (text: string, messageId: string) => {
+    if (speakingMessageId === messageId || loadingAudioId === messageId) {
+      stopSpeaking();
       return;
     }
-    setIsSpeaking(true);
+
+    stopSpeaking();
+    activeRequestIdRef.current = messageId;
+    setLoadingAudioId(messageId);
+
     try {
       const cleanText = text.replace(/[#*`]/g, '').slice(0, 500);
       const base64Audio = await getSpeech(cleanText);
+
+      if (activeRequestIdRef.current !== messageId) return; // superseded/stopped while fetching
+
+      setLoadingAudioId(null);
+      setSpeakingMessageId(messageId);
+
+      const onPlaybackEnd = () => {
+        if (activeRequestIdRef.current === messageId) {
+          activeRequestIdRef.current = null;
+        }
+        setSpeakingMessageId(current => (current === messageId ? null : current));
+      };
+
       if (base64Audio) {
         const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+        audioContextRef.current = audioContext;
         const binaryString = atob(base64Audio);
         const len = binaryString.length;
         const bytes = new Int16Array(len / 2);
@@ -160,17 +204,22 @@ export default function App() {
         const source = audioContext.createBufferSource();
         source.buffer = audioBuffer;
         source.connect(audioContext.destination);
-        source.onended = () => setIsSpeaking(false);
+        source.onended = onPlaybackEnd;
+        audioSourceRef.current = source;
         source.start();
       } else {
         const utterance = new SpeechSynthesisUtterance(cleanText);
         utterance.lang = language === 'Sheng' ? 'sw-KE' : 'en-GB';
-        utterance.onend = () => setIsSpeaking(false);
+        utterance.onend = onPlaybackEnd;
         window.speechSynthesis.speak(utterance);
       }
     } catch (error) {
       console.error("Speech error:", error);
-      setIsSpeaking(false);
+      if (activeRequestIdRef.current === messageId) {
+        activeRequestIdRef.current = null;
+      }
+      setLoadingAudioId(null);
+      setSpeakingMessageId(null);
     }
   };
 
@@ -330,14 +379,20 @@ export default function App() {
                       </div>
                       
                       {msg.role === 'ai' && (
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           size="sm"
-                          onClick={() => handleSpeak(msg.content)}
+                          onClick={() => handleSpeak(msg.content, msg.id)}
                           className="mt-4 h-8 text-[10px] font-black uppercase tracking-widest bg-primary/5 hover:bg-primary/10 text-primary rounded-full px-4"
                         >
-                          {isSpeaking ? <VolumeX className="w-3 h-3 mr-2" /> : <Volume2 className="w-3 h-3 mr-2" />}
-                          {isSpeaking ? "Stop" : "Listen"}
+                          {loadingAudioId === msg.id ? (
+                            <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                          ) : speakingMessageId === msg.id ? (
+                            <VolumeX className="w-3 h-3 mr-2" />
+                          ) : (
+                            <Volume2 className="w-3 h-3 mr-2" />
+                          )}
+                          {loadingAudioId === msg.id ? "Loading" : speakingMessageId === msg.id ? "Stop" : "Listen"}
                         </Button>
                       )}
                     </div>
@@ -422,8 +477,6 @@ export default function App() {
           </motion.div>
         </div>
       </div>
-
-      <audio ref={audioRef} onEnded={() => setIsSpeaking(false)} hidden />
     </div>
   );
 }
