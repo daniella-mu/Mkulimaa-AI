@@ -86,7 +86,6 @@ export default function App() {
         timestamp: new Date()
       };
       setMessages(prev => [...prev, aiMessage]);
-      handleSpeak(advice);
     } catch (error) {
       console.error("Error getting advice:", error);
       
